@@ -1,0 +1,65 @@
+from tkinter import simpledialog
+import tkinter as tk
+import requests
+import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+
+
+response=requests.get("https://www.amazon.com.mx")
+print(response.status_code)
+#print(response.content)
+
+
+if response.status_code==200:
+    def buscar_producto():
+        root = tk.Tk()
+        root.withdraw()
+
+        busqueda = simpledialog.askstring("Búsqueda", "Ingrese su búsqueda:")
+        num_paginas = simpledialog.askinteger("Número de páginas", "Ingrese el número de páginas a buscar:")
+
+        s = Service(ChromeDriverManager().install())
+        opc = Options()
+        opc.add_argument("--window-size=1020,1200")
+        navegador = webdriver.Chrome(service=s, options=opc)
+
+        resultados = {"Nombre":[], "Rating":[], "Precio":[], "Fecha de Entrega":[]}
+
+        for pagina in range(1, num_paginas + 1):
+            url = f"https://www.amazon.com.mx/s?k={busqueda}&page={pagina}"
+            navegador.get(url)
+
+            productos = navegador.find_elements(By.CSS_SELECTOR, ".s-result-item")
+
+        for div in productos:
+            nombre=div.find("h2",attrs={"class":"a-size-base-plus a-color-base a-text-normal"})
+            rating=div.find("h3",attrs={"class":"a-size-base puis-normal-weight-text"})
+            precio=div.find("p",attrs={"class":"a-price-whole"})
+            fecha_entrega=div.find("p",attrs={"class":"a-color-base a-text-bold"})
+
+            #" ".strip()
+
+            resultados["Nombre"].append(nombre.text)
+            resultados["Rating"].append(rating.text)
+            resultados["Precio"].append(precio.text.strip)
+            resultados["Fecha de Entrega"].append(fecha_entrega.text)
+            print(nombre.text)
+            print(rating.text)
+            print(precio.text)
+            print(fecha_entrega.text)
+
+            print(productos[0].prettify())
+            print("\n")
+
+
+        data_df = pd.DataFrame(productos)
+        data_df.to_csv("product_amazon.csv")
+
+
+    ###print(soup.head.title)
+else:
+    print(f"ERROR {response.status_code}AL MOMENTO DE CARGAR LA PAGINA")
